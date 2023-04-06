@@ -61,32 +61,52 @@ module.exports = function (app) {
       let project = req.params.project;
       const { _id, issue_title, issue_text, created_by, assigned_to, status_text, open } = req.body;
       const updateFields = {};
-      
+
       if (issue_title) updateFields['issues.$.issue_title'] = issue_title;
-      if (issue_text)  updateFields['issues.$.issue_text'] = issue_text;
-      if (created_by)  updateFields['issues.$.created_by'] = created_by;
+      if (issue_text) updateFields['issues.$.issue_text'] = issue_text;
+      if (created_by) updateFields['issues.$.created_by'] = created_by;
       if (assigned_to) updateFields['issues.$.assigned_to'] = assigned_to
       if (status_text) updateFields['issues.$.status_text'] = status_text;
-      if (open)       updateFields['issues.$.open'] = open;
+      if (open) updateFields['issues.$.open'] = open;
       updateFields['issues.$.updated_on'] = new Date();
 
       const result = await Issue.updateOne(
         { 'issues._id': _id },
         { $set: updateFields }
       );
-      
+
       if (result.modifiedCount > 0) {
         console.log('Issue updated successfully.');
         const updatedIssue = await Issue.findOne({ 'issues._id': _id }, { 'issues.$': 1 });
-        
+
         res.json(updatedIssue.issues[0])
       } else {
         console.log('Issue not found.');
       }
     })
 
-    .delete(function (req, res) {
+    .delete(async (req, res) => {
       let project = req.params.project;
+      const id = req.body._id;
+
+      const result = await Issue.updateOne(
+        { project_name: project },
+        { $pull: { issues: { _id: id } } }
+      );
+
+      if (result.modifiedCount > 0) {
+        console.log('Issue deleted.');
+        res.json({
+          result: 'successfully deleted',
+          _id: id
+        });
+      } else {
+        console.log('Issue not found.');
+        res.json({
+          error: 'could not delete',
+          _id: id,
+        });
+      }
 
     });
 
