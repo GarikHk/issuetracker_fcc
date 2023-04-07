@@ -2,7 +2,7 @@ const chaiHttp = require('chai-http');
 const chai = require('chai');
 const assert = chai.assert;
 const server = require('../server');
-const Issue = require('../schemas/issue.js');
+const Issue = require('../schemas/Issue.js');
 
 
 chai.use(chaiHttp);
