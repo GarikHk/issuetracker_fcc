@@ -16,15 +16,37 @@ module.exports = function (app) {
 
     .get(async (req, res) => {
       let project = req.params.project;
+      let query = req.query;
+      if (query.open) query.open = !!query.open;
+      if (query.created_on) query.created_on = new Date(query.created_on);
+      if (query.updated_on) query.updated_on = new Date(query.updated_on);
 
-      const found = await Issue.findOne({ project_name: project })
-
-      res.json(found.issues);
+      //const found = 
+      await Issue.findOne({ project_name: project })
+        .then(doc => {
+          if (!doc) {
+            return [];
+          }
+          const filteredIssues = doc.issues.filter(issue => {
+            for (const prop in query) {
+              if (query.hasOwnProperty(prop) && issue[prop] != query[prop]) {
+                return false;
+              }
+            }
+            return true;
+          });
+          return res.json(filteredIssues);
+        })
+        .catch(err => {
+          return console.log(err)
+        });
     })
 
     .post(async (req, res) => {
       let project = req.params.project;
       const { issue_title, issue_text, created_by, assigned_to, status_text } = req.body;
+      if (!issue_title || !issue_text || !created_by) return res.json({ error: 'required field(s) missing' });
+
       const newIssue = {
         issue_title: issue_title,
         issue_text: issue_text,
@@ -41,7 +63,7 @@ module.exports = function (app) {
           const i = found.issues.length - 1;
           const updated = await found.save();
 
-          res.json(updated.issues[i]);
+          return res.json(updated.issues[i]);
         } else {
           const newProject = new Issue({
             project_name: project,
@@ -49,7 +71,7 @@ module.exports = function (app) {
           });
           const saved = await newProject.save();
 
-          res.json(saved.issues[0]);
+          return res.json(saved.issues[0]);
         }
       } catch (err) {
         console.log(err);
@@ -60,6 +82,7 @@ module.exports = function (app) {
     .put(async (req, res) => {
       let project = req.params.project;
       const { _id, issue_title, issue_text, created_by, assigned_to, status_text, open } = req.body;
+      if (!_id) return res.json({ error: 'missing _id' });
       const updateFields = {};
 
       if (issue_title) updateFields['issues.$.issue_title'] = issue_title;
@@ -68,7 +91,12 @@ module.exports = function (app) {
       if (assigned_to) updateFields['issues.$.assigned_to'] = assigned_to
       if (status_text) updateFields['issues.$.status_text'] = status_text;
       if (open) updateFields['issues.$.open'] = open;
-      updateFields['issues.$.updated_on'] = new Date();
+
+      if (Object.keys(updateFields).length === 0) {
+        return res.json({ error: 'no update field(s) sent', '_id': _id })
+      } else {
+        updateFields['issues.$.updated_on'] = new Date();
+      }
 
       const result = await Issue.updateOne(
         { 'issues._id': _id },
@@ -77,17 +105,20 @@ module.exports = function (app) {
 
       if (result.modifiedCount > 0) {
         console.log('Issue updated successfully.');
-        const updatedIssue = await Issue.findOne({ 'issues._id': _id }, { 'issues.$': 1 });
+        return res.json({ result: 'successfully updated', '_id': _id });
 
-        res.json(updatedIssue.issues[0])
       } else {
-        console.log('Issue not found.');
+        console.log('Issue not updated.');
+        return res.json({ error: 'could not update', '_id': _id })
       }
+
     })
 
     .delete(async (req, res) => {
       let project = req.params.project;
       const id = req.body._id;
+
+      if (!id) return res.json({ error: 'missing _id' });
 
       const result = await Issue.updateOne(
         { project_name: project },
@@ -96,13 +127,13 @@ module.exports = function (app) {
 
       if (result.modifiedCount > 0) {
         console.log('Issue deleted.');
-        res.json({
+        return res.json({
           result: 'successfully deleted',
           _id: id
         });
       } else {
         console.log('Issue not found.');
-        res.json({
+        return res.json({
           error: 'could not delete',
           _id: id,
         });

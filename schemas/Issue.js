@@ -15,15 +15,6 @@ const IssueSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-      created_on: {
-        type: Date,
-        required: true,
-        default: new Date(),
-      },
-      updated_on: {
-        type: Date,
-        default: Date.now,
-      },
       created_by: {
         type: String,
         required: true,
@@ -31,14 +22,25 @@ const IssueSchema = new mongoose.Schema({
       assigned_to: {
         type: String,
         required: false,
-      },
-      open: {
-        type: Boolean,
-        default: true,
+        default: '',
       },
       status_text: {
         type: String,
         required: false,
+        default: '',
+      },
+      created_on: {
+        type: Date,
+        required: true,
+        default: new Date(),
+      },
+      updated_on: {
+        type: Date,
+        default: new Date(),
+      },
+      open: {
+        type: Boolean,
+        default: true,
       },
     }],
     required: true,
