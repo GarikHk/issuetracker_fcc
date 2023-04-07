@@ -104,11 +104,9 @@ module.exports = function (app) {
       );
 
       if (result.modifiedCount > 0) {
-        console.log('Issue updated successfully.');
         return res.json({ result: 'successfully updated', '_id': _id });
 
       } else {
-        console.log('Issue not updated.');
         return res.json({ error: 'could not update', '_id': _id })
       }
 
@@ -126,13 +124,11 @@ module.exports = function (app) {
       );
 
       if (result.modifiedCount > 0) {
-        console.log('Issue deleted.');
         return res.json({
           result: 'successfully deleted',
           _id: id
         });
       } else {
-        console.log('Issue not found.');
         return res.json({
           error: 'could not delete',
           _id: id,
